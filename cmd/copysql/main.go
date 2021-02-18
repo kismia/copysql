@@ -7,14 +7,15 @@ import (
 	"time"
 
 	"github.com/mitchellh/ioprogress"
-	"github.com/oleh-ozimok/copysql/pkg/config"
-	"github.com/oleh-ozimok/copysql/pkg/datasource"
 	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
 	"golang.org/x/sync/errgroup"
 
-	_ "github.com/oleh-ozimok/copysql/pkg/datasource/clickhouse"
-	_ "github.com/oleh-ozimok/copysql/pkg/datasource/vertica"
+	"github.com/kismia/copysql/pkg/config"
+	"github.com/kismia/copysql/pkg/datasource"
+
+	_ "github.com/kismia/copysql/pkg/datasource/clickhouse"
+	_ "github.com/kismia/copysql/pkg/datasource/vertica"
 )
 
 type options struct {
@@ -81,7 +82,7 @@ func main() {
 			progressReader := &ioprogress.Reader{
 				Reader: pipeReader,
 				DrawFunc: ioprogress.DrawTerminalf(os.Stdout, func(progress int64, _ int64) string {
-					return fmt.Sprintf("transfered %s | %s", ioprogress.ByteUnitStr(progress), time.Since(copyStart))
+					return fmt.Sprintf("transfered %s | %s", ByteUnitStr(progress), time.Since(copyStart))
 				}),
 			}
 

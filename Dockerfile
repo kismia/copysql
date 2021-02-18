@@ -2,9 +2,9 @@ FROM golang:1.9-alpine as builder
 
 LABEL maintainer="Oleg Ozimok ozimokoleg@gmail.com"
 
-COPY . /go/src/github.com/oleh-ozimok/copysql
+COPY . /go/src/github.com/kismia/copysql
 
-WORKDIR /go/src/github.com/oleh-ozimok/copysql/cmd/copysql
+WORKDIR /go/src/github.com/kismia/copysql/cmd/copysql
 
 RUN go build -o /copysql .
 

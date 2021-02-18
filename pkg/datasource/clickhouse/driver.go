@@ -1,12 +1,14 @@
 package clickhouse
 
 import (
+	"encoding/csv"
 	"io"
 
+	"github.com/kismia/go-clickhouse"
 	"github.com/mitchellh/mapstructure"
-	"github.com/oleh-ozimok/copysql/pkg/datasource"
-	"github.com/oleh-ozimok/go-clickhouse"
 	"github.com/pkg/errors"
+
+	"github.com/kismia/copysql/pkg/datasource"
 )
 
 const driverName = "clickhouse"
@@ -65,8 +67,29 @@ func (d *Driver) CopyFrom(r io.Reader, table string) error {
 	return query.Exec(d.cluster.ActiveConn())
 }
 
-func (*Driver) CopyTo(w io.Writer, query string) error {
-	panic("not implemented")
+func (d *Driver) CopyTo(w io.Writer, query string) error {
+	q := clickhouse.NewQuery(query)
+	iter := q.Iter(d.cluster.ActiveConn())
+	columns := iter.Columns()
+	readColumns := make([]interface{}, len(columns))
+	writeColumns := make([]string, len(columns))
+
+	for i := range writeColumns {
+		readColumns[i] = &writeColumns[i]
+	}
+
+	csvWriter := csv.NewWriter(w)
+
+	for iter.Scan(readColumns...) {
+		err := csvWriter.Write(writeColumns)
+		if err != nil {
+			return errors.Wrap(err, "an error occurred while reading from "+driverName)
+		}
+	}
+
+	csvWriter.Flush()
+
+	return iter.Error()
 }
 
 func (d *Driver) Close() error {

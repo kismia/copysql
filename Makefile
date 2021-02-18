@@ -5,7 +5,7 @@ VERSION?=?
 COMMIT=$(shell git rev-parse HEAD)
 BRANCH=$(shell git rev-parse --abbrev-ref HEAD)
 
-BUILD_DIR=${GOPATH}/src/github.com/oleh-ozimok/copysql/cmd/copysql
+BUILD_DIR=${GOPATH}/src/github.com/kismia/copysql/cmd/copysql
 CURRENT_DIR=$(shell pwd)
 BUILD_DIR_LINK=$(shell readlink ${BUILD_DIR})
 

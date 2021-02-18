@@ -1,14 +1,17 @@
 package vertica
 
 import (
+	"context"
 	"database/sql"
 	"encoding/csv"
 	"io"
 
 	"github.com/mitchellh/mapstructure"
-	"github.com/oleh-ozimok/copysql/pkg/datasource"
+	"github.com/pkg/errors"
 
-	_ "github.com/lib/pq"
+	"github.com/kismia/copysql/pkg/datasource"
+
+	"github.com/vertica/vertica-sql-go"
 )
 
 const driverName = "vertica"
@@ -47,31 +50,43 @@ func FromParameters(parameters map[string]interface{}) (datasource.Driver, error
 
 func New(params DriverParameters) *Driver {
 	return &Driver{
-		dsn: "postgres://" + params.Username + ":" + params.Password + "@" + params.Address + "/" + params.Database + "?sslmode=disable",
+		dsn: driverName + "://" + params.Username + ":" + params.Password + "@" + params.Address + "/" + params.Database + "?sslmode=disable",
 	}
 }
 
 func (d *Driver) Open() (err error) {
-	d.connection, err = sql.Open("postgres", d.dsn)
+	d.connection, err = sql.Open(driverName, d.dsn)
 
-	return
+	if err != nil {
+		return err
+	}
+
+	return d.connection.Ping()
 }
 
-func (*Driver) CopyFrom(r io.Reader, table string) error {
-	panic("not implemented")
+func (d *Driver) CopyFrom(r io.Reader, table string) error {
+	vCtx := vertigo.NewVerticaContext(context.Background())
+	err := vCtx.SetCopyInputStream(r)
+	if err != nil {
+		return errors.Wrap(err, "cannot read data to insert")
+	}
+
+	_, err = d.connection.ExecContext(vCtx, "COPY "+table+" FROM STDIN DELIMITER ',' ABORT ON ERROR")
+
+	return err
 }
 
 func (d *Driver) CopyTo(w io.Writer, query string) error {
 	rows, err := d.connection.Query(query)
 	if err != nil {
-		return err
+		return errors.Wrap(err, "cannot execute query")
 	}
 
 	defer rows.Close()
 
 	columns, err := rows.Columns()
 	if err != nil {
-		return err
+		return errors.Wrap(err, "cannot read table columns from "+driverName)
 	}
 
 	readColumns := make([]interface{}, len(columns))
@@ -82,20 +97,22 @@ func (d *Driver) CopyTo(w io.Writer, query string) error {
 	}
 
 	csvWriter := csv.NewWriter(w)
-	csvWriter.UseCRLF = true
 
 	record := make([]string, len(columns))
 
 	for rows.Next() {
 		if err := rows.Scan(readColumns...); err != nil {
-			return err
+			return errors.Wrap(err, "an error occurred while reading from "+driverName)
 		}
 
 		for i := range writeColumns {
 			record[i] = writeColumns[i].String
 		}
 
-		csvWriter.Write(record)
+		err = csvWriter.Write(record)
+		if err != nil {
+			return errors.Wrap(err, "an error occurred while reading from "+driverName)
+		}
 	}
 
 	csvWriter.Flush()
