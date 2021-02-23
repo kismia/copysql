@@ -1,4 +1,4 @@
-FROM golang:1.9-alpine as builder
+FROM golang:1.15.6-alpine as builder
 
 LABEL maintainer="Oleg Ozimok ozimokoleg@gmail.com"
 
