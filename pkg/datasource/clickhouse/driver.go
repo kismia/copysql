@@ -1,8 +1,9 @@
 package clickhouse
 
 import (
-	"encoding/csv"
 	"io"
+
+	"github.com/kismia/copysql/pkg/csv"
 
 	"github.com/kismia/go-clickhouse"
 	"github.com/mitchellh/mapstructure"

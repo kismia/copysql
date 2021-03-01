@@ -3,8 +3,9 @@ package vertica
 import (
 	"context"
 	"database/sql"
-	"encoding/csv"
 	"io"
+
+	"github.com/kismia/copysql/pkg/csv"
 
 	"github.com/mitchellh/mapstructure"
 	"github.com/pkg/errors"
